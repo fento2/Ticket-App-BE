@@ -15,10 +15,105 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model user {
-  id       Int    @id @default(autoincrement())
-  username String @unique
-  email    String @unique
-  name     String
-  password String
+model User {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
+  email         String   @unique
+  referralCode  String   @unique
+  name          String
+  password      String
+  isVerified    Boolean
+  profileImage  String?
+  noTlp         String?
+  gender        Gender?
+  backAccount   String?
+  bankName      String?
+  accountHolder String?
+  role          Role     @relation(fields: [roleName], references: [name])
+  roleName      String
+  createAt      DateTime @default(now())
+  updateAt      DateTime @default(now())
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model Role {
+  id    Int        @id @default(autoincrement())
+  name  RoleName   @unique
+  users UserRole[]
+}
+
+enum RoleName {
+  CUSTOMER
+  ORGANIZER
+  ADMIN
+}
+
+model UserRole {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+  role   Role @relation(fields: [roleId], references: [id])
+  roleId Int
+
+  @@unique([userId, roleId])
+}
+
+model Event {
+  id          Int         @id @default(autoincrement())
+  slug        String      @unique
+  organizer   User        @relation(fields: [organizerId], references: [id])
+  organizerId Int
+  banner      String
+  description String
+  terms       String
+  city        String
+  province    String
+  country     String
+  latitude    Float? //lintang
+  longitude   Float? //bujur
+  category    Category
+  eventStatus EventStatus
+  startDate   DateTime
+  endDate     DateTime
+  createAt    DateTime    @default(now())
+  updateAt    DateTime    @default(now())
+}
+
+enum Category {
+  MUSIC
+  SPORTS
+  CONFERENCE
+  WORKSHOP
+  FESTIVAL
+  EXHIBITION
+  THEATER
+  COMEDY
+  COMMUNITY
+  EDUCATION
+  BUSINESS
+  TECHNOLOGY
+  HEALTH
+  LIFESTYLE
+}
+
+enum EventStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  CANCELED
+}
+
+model TicketType {
+  id          Int     @id @default(autoincrement())
+  event       Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     Int
+  name        String
+  price       Int
+  quota       Int
+  description String?
+  benefit     String?
 }
