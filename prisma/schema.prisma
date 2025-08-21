@@ -16,10 +16,10 @@ datasource db {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  username      String   @unique
-  email         String   @unique
-  referralCode  String   @unique
+  id            Int        @id @default(autoincrement())
+  username      String     @unique
+  email         String     @unique
+  referralCode  String     @unique
   name          String
   password      String
   isVerified    Boolean
@@ -29,10 +29,11 @@ model User {
   backAccount   String?
   bankName      String?
   accountHolder String?
-  role          Role     @relation(fields: [roleName], references: [name])
+  role          Role       @relation(fields: [roleName], references: [name])
   roleName      String
-  createAt      DateTime @default(now())
-  updateAt      DateTime @default(now())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now())
+  userRole      UserRole[]
 }
 
 enum Gender {
@@ -79,8 +80,8 @@ model Event {
   eventStatus EventStatus
   startDate   DateTime
   endDate     DateTime
-  createAt    DateTime    @default(now())
-  updateAt    DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now())
 }
 
 enum Category {
@@ -108,12 +109,100 @@ enum EventStatus {
 }
 
 model TicketType {
-  id          Int     @id @default(autoincrement())
-  event       Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id          Int      @id @default(autoincrement())
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId     Int
   name        String
   price       Int
   quota       Int
   description String?
   benefit     String?
+  startSale   DateTime
+  endSale     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Voucher {
+  id        Int           @id @default(autoincrement())
+  code      String        @unique
+  event     Event         @relation(fields: [eventId], references: [id])
+  eventId   Int
+  discount  Int
+  startDate DateTime
+  endDate   DateTime
+  status    VoucherStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+enum VoucherStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+model OrderItem {
+  id            Int         @id @default(autoincrement())
+  ticketType    TicketType  @relation(fields: [ticketTypeId], references: [id])
+  ticketTypeId  Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  transactionId Int
+  quantity      Int
+  subTotal      Int
+}
+
+model Transaction {
+  id             Int               @id @default(autoincrement())
+  trasactionCode String            @unique
+  user           User              @relation(fields: [customerId], references: [id])
+  customerId     Int
+  event          Event             @relation(fields: [eventId], references: [id])
+  eventId        Int
+  status         TransactionStatus
+  paymentProof   String
+  totalPrice     Int
+  useCoupon      Boolean
+  usePoint       Int
+  expireAt       DateTime
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  orderItems     OrderItem[]
+}
+
+enum TransactionStatus {
+  WAITING_PAYMENT
+  WAITING_CONFIRMATION
+  DONE
+  REJECTED
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  event      Event    @relation(fields: [eventId], references: [id])
+  eventId    Int
+  user       User     @relation(fields: [customerId], references: [id])
+  customerId Int
+  rating     Int
+  comment    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Referral {
+  id         Int  @id @default(autoincrement())
+  referrer   User @relation("Referrer", fields: [referrerId], references: [id])
+  referrerId Int
+  referred   User @relation("Referred", fields: [referredId], references: [id])
+  referredId Int  @unique //yang menerima 
+}
+
+model Coupon {
+  id        Int       @id @default(autoincrement())
+  discount  Int
+  expiredAt DateTime
+  isUsed    Boolean
+  useAt     DateTime?
+  user      User      @relation(fields: [userId], references: [id])
+  userId    Int
 }
