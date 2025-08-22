@@ -16,24 +16,32 @@ datasource db {
 }
 
 model User {
-  id            Int        @id @default(autoincrement())
-  username      String     @unique
-  email         String     @unique
-  referralCode  String     @unique
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
+  email         String   @unique
+  referralCode  String   @unique
   name          String
   password      String
-  isVerified    Boolean
+  isVerified    Boolean  @default(false)
   profileImage  String?
   noTlp         String?
   gender        Gender?
-  backAccount   String?
+  bankAccount   String?
   bankName      String?
   accountHolder String?
-  role          Role       @relation(fields: [roleName], references: [name])
-  roleName      String
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @default(now())
-  userRole      UserRole[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  userRoles          UserRole[]
+  organizedEvents    Event[]        @relation("OrganizerEvents")
+  ownedOrganizations Organization[]
+  transactions       Transaction[]
+  reviews            Review[]
+  referralsMade      Referral[]     @relation("Referrer")
+  referralsGot       Referral?      @relation("Referred")
+  coupons            Coupon[]
+  points             Point[]
 }
 
 enum Gender {
@@ -55,33 +63,63 @@ enum RoleName {
 
 model UserRole {
   id     Int  @id @default(autoincrement())
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId Int
-  role   Role @relation(fields: [roleId], references: [id])
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
   roleId Int
 
   @@unique([userId, roleId])
 }
 
+model Organization {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  logo        String?
+  email       String?  @unique
+  phone       String?
+  address     String?
+  city        String?
+  province    String?
+  country     String?
+  website     String?
+  taxNumber   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  ownerId Int
+  owner   User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  events  Event[]
+}
+
 model Event {
-  id          Int         @id @default(autoincrement())
-  slug        String      @unique
-  organizer   User        @relation(fields: [organizerId], references: [id])
-  organizerId Int
-  banner      String
-  description String
-  terms       String
-  city        String
-  province    String
-  country     String
-  latitude    Float? //lintang
-  longitude   Float? //bujur
-  category    Category
-  eventStatus EventStatus
-  startDate   DateTime
-  endDate     DateTime
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @default(now())
+  id             Int           @id @default(autoincrement())
+  slug           String        @unique
+  organizer      User          @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  organizerId    Int
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId Int?
+  banner         String
+  description    String
+  terms          String
+  city           String
+  province       String
+  country        String
+  latitude       Float?
+  longitude      Float?
+  category       Category
+  eventStatus    EventStatus   @default(DRAFT)
+  startDate      DateTime
+  endDate        DateTime
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  tickets      TicketType[]
+  vouchers     Voucher[]
+  transactions Transaction[]
+  reviews      Review[]
 }
 
 enum Category {
@@ -121,17 +159,19 @@ model TicketType {
   endSale     DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
 }
 
 model Voucher {
   id        Int           @id @default(autoincrement())
   code      String        @unique
-  event     Event         @relation(fields: [eventId], references: [id])
+  event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId   Int
   discount  Int
   startDate DateTime
   endDate   DateTime
-  status    VoucherStatus
+  status    VoucherStatus @default(ACTIVE)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -144,30 +184,31 @@ enum VoucherStatus {
 
 model OrderItem {
   id            Int         @id @default(autoincrement())
-  ticketType    TicketType  @relation(fields: [ticketTypeId], references: [id])
+  ticketType    TicketType  @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
   ticketTypeId  Int
-  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   transactionId Int
   quantity      Int
   subTotal      Int
 }
 
 model Transaction {
-  id             Int               @id @default(autoincrement())
-  trasactionCode String            @unique
-  user           User              @relation(fields: [customerId], references: [id])
-  customerId     Int
-  event          Event             @relation(fields: [eventId], references: [id])
-  eventId        Int
-  status         TransactionStatus
-  paymentProof   String
-  totalPrice     Int
-  useCoupon      Boolean
-  usePoint       Int
-  expireAt       DateTime
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  orderItems     OrderItem[]
+  id              Int               @id @default(autoincrement())
+  transactionCode String            @unique
+  user            User              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId      Int
+  event           Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId         Int
+  status          TransactionStatus @default(WAITING_PAYMENT)
+  paymentProof    String?
+  totalPrice      Int
+  useCoupon       Boolean           @default(false)
+  usePoint        Int               @default(0)
+  expireAt        DateTime
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  orderItems OrderItem[]
 }
 
 enum TransactionStatus {
@@ -175,34 +216,55 @@ enum TransactionStatus {
   WAITING_CONFIRMATION
   DONE
   REJECTED
+  EXPIRED
+  CANCELED
 }
 
 model Review {
   id         Int      @id @default(autoincrement())
-  event      Event    @relation(fields: [eventId], references: [id])
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId    Int
-  user       User     @relation(fields: [customerId], references: [id])
+  user       User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId Int
   rating     Int
   comment    String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@unique([eventId, customerId])
 }
 
 model Referral {
   id         Int  @id @default(autoincrement())
-  referrer   User @relation("Referrer", fields: [referrerId], references: [id])
+  referrer   User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
   referrerId Int
-  referred   User @relation("Referred", fields: [referredId], references: [id])
-  referredId Int  @unique //yang menerima 
+  referred   User @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  referredId Int  @unique
 }
 
 model Coupon {
   id        Int       @id @default(autoincrement())
   discount  Int
   expiredAt DateTime
-  isUsed    Boolean
+  isUsed    Boolean   @default(false)
   useAt     DateTime?
-  user      User      @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
+}
+
+model Point {
+  id        Int       @id @default(autoincrement())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  amount    Int
+  type      PointType
+  expiredAt DateTime
+  useAt     DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+enum PointType {
+  EARNED
+  USED
 }

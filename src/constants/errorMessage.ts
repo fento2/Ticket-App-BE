@@ -23,4 +23,5 @@ export enum ErrorMessage {
   // Server
   INTERNAL_SERVER_ERROR = "Internal server error",
   SERVICE_UNAVAILABLE = "Service unavailable, please try again later",
+  SERVER_MISSING_SECRET_KEY = "Server Missing Secret Key",
 }

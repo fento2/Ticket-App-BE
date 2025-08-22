@@ -50,7 +50,7 @@ class App {
       }
     );
   };
-  public start = () => {
+  start = (): void => {
     this.app.listen(PORT, () => {
       this.app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
