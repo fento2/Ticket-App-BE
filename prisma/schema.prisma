@@ -16,32 +16,28 @@ datasource db {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  username      String   @unique
-  email         String   @unique
-  referralCode  String   @unique
-  name          String
-  password      String
-  isVerified    Boolean  @default(false)
-  profileImage  String?
-  noTlp         String?
-  gender        Gender?
-  bankAccount   String?
-  bankName      String?
-  accountHolder String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique
+  referralCode String   @unique
+  name         String
+  password     String
+  isVerified   Boolean  @default(false)
+  profileImage String?
+  phone        String?
+  gender       Gender?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  userRoles          UserRole[]
-  organizedEvents    Event[]        @relation("OrganizerEvents")
-  ownedOrganizations Organization[]
-  transactions       Transaction[]
-  reviews            Review[]
-  referralsMade      Referral[]     @relation("Referrer")
-  referralsGot       Referral?      @relation("Referred")
-  coupons            Coupon[]
-  points             Point[]
+  userRoles     UserRole[]
+  organization  Organization? // sisi pasangan, cukup tulis relasi
+  transactions  Transaction[]
+  reviews       Review[]
+  referralsMade Referral[]    @relation("Referrer")
+  referralsGot  Referral?     @relation("Referred")
+  coupons       Coupon[]
+  points        Point[]
 }
 
 enum Gender {
@@ -72,32 +68,28 @@ model UserRole {
 }
 
 model Organization {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  logo        String?
-  email       String?  @unique
-  phone       String?
-  address     String?
-  city        String?
-  province    String?
-  country     String?
-  website     String?
-  taxNumber   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  name          String
+  description   String?
+  photo         String?
+  bankAccount   String?
+  bankName      String?
+  accountHolder String?
+  phone         String?
+  website       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
-  ownerId Int
   owner   User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId Int     @unique // enforce 1 user hanya punya 1 organization
   events  Event[]
 }
 
 model Event {
   id             Int           @id @default(autoincrement())
   slug           String        @unique
-  organizer      User          @relation("OrganizerEvents", fields: [organizerId], references: [id])
-  organizerId    Int
   organization   Organization? @relation(fields: [organizationId], references: [id])
   organizationId Int?
   banner         String
@@ -249,7 +241,7 @@ model Coupon {
   isUsed    Boolean   @default(false)
   useAt     DateTime?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
+  userId    Int       @unique
 }
 
 model Point {

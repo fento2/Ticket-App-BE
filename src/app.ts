@@ -2,9 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
 import express, { Application, NextFunction, Request, Response } from "express";
-import AppError from "./errors/AppError";
-import { ErrorMessage } from "./constants/errorMessage";
-import { HttpStatus } from "./constants/httpStatus";
+import errorController from "./errors/error.controller";
 
 const PORT: string = process.env.PORT || "8181";
 
@@ -27,28 +25,9 @@ class App {
       res.status(200).send("<h1>Test Tiket Backend</h1>");
     });
   };
-  private errorHandler = (): void => {
-    this.app.use(
-      (error: unknown, req: Request, res: Response, next: NextFunction) => {
-        if (error instanceof AppError) {
-          return res.status(error.rc).json({
-            result: {
-              success: error.success,
-              message: error.message,
-            },
-          });
-        }
-        const message =
-          error instanceof Error ? error.message : "Unknown Error";
 
-        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-          result: {
-            success: false,
-            message,
-          },
-        });
-      }
-    );
+  private errorHandler = (): void => {
+    this.app.use(errorController);
   };
   start = (): void => {
     this.app.listen(PORT, () => {

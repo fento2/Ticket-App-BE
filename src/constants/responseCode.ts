@@ -1,4 +1,4 @@
-export enum HttpStatus {
+export enum responseCode {
   // Success
   OK = 200, // sukses request
   CREATED = 201, // data berhasil dibuat
