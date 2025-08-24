@@ -1,37 +1,17 @@
-import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
-const signUpSchema = z.object({
+export const signUpSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters long"),
   username: z
     .string()
-    .min(1, "username required")
-    .refine((val) => val === val.toLowerCase(), {
-      message: "username must be lowercase",
-    }),
-  email: z.string().email("email required"),
-  name: z.string().min(1, "name required"),
+    .min(4, "Username must be at least 4 characters long")
+    .regex(/^[A-Za-z0-9]+$/, "Username can only contain letters and numbers"),
+  email: z.email("Invalid email address"),
   password: z
     .string()
-    .min(8, "password must be at least 8 characters")
-    .refine(
-      (val) =>
-        /[A-Z]/.test(val) &&
-        /[a-z]/.test(val) &&
-        /\d/.test(val) &&
-        /[!@#$%^&*]/.test(val),
-      { message: "password not strong" }
-    ),
+    .min(8, "Password must be at least 8 characters long")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one symbol"),
+  addReferral: z.string().optional(),
 });
-
-export const authValidation = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    signUpSchema.parse(req.body);
-    next();
-  } catch (error) {
-    next(error);
-  }
-};

@@ -8,10 +8,10 @@ import { PointType, RoleName } from "../../prisma/generated/prisma";
 class AuthRepository {
   createUser = async (data: ISignUpDto) => {
     return await prisma.$transaction(async (tx) => {
-      const { addReferral } = data;
+      const { addReferral, ...userData } = data;
       const newUser = await tx.user.create({
         data: {
-          ...data,
+          ...userData,
           password: await hashPassword(data.password),
           referralCode: await generateReferral(data.username),
         },

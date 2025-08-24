@@ -3,6 +3,7 @@ dotenv.config();
 import cors from "cors";
 import express, { Application, NextFunction, Request, Response } from "express";
 import errorController from "./errors/error.controller";
+import AuthRouter from "./routers/auth.router";
 
 const PORT: string = process.env.PORT || "8181";
 
@@ -21,9 +22,12 @@ class App {
     this.app.use(express.json());
   };
   private route = (): void => {
+    const authRouter = new AuthRouter();
+
     this.app.get("/", (req: Request, res: Response, next: NextFunction) => {
       res.status(200).send("<h1>Test Tiket Backend</h1>");
     });
+    this.app.use("/auth", authRouter.getRouter());
   };
 
   private errorHandler = (): void => {
